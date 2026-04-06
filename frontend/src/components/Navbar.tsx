@@ -51,13 +51,21 @@ export default function Navbar({ user }: { user: AuthUser }) {
           </nav>
         </div>
 
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-muted-foreground hidden sm:block">
-            {user.username}
-            <span className="ml-2 text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => router.push("/profile")}
+            className={cn(
+              "hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors",
+              pathname === "/profile"
+                ? "bg-primary/10 text-primary font-medium"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted"
+            )}
+          >
+            <span>{user.username}</span>
+            <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">
               {user.role}
             </span>
-          </span>
+          </button>
           <Button variant="ghost" size="sm" onClick={logout}>
             <LogOut className="h-4 w-4 mr-1" />
             Выйти

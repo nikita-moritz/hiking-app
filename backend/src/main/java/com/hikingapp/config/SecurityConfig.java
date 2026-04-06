@@ -51,6 +51,7 @@ public class SecurityConfig {
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/trails/**").authenticated()
                         .requestMatchers("/api/events/**").authenticated()
+                        .requestMatchers("/api/profile/**").authenticated()
                         .requestMatchers("/api/users/**").hasRole("SUPERUSER")
                         .requestMatchers("/api/audit/**").hasRole("SUPERUSER")
                         .anyRequest().authenticated()
