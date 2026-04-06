@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { clearAuth, type AuthUser } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
-const links = [
+const baseLinks = [
   { href: "/trails", label: "Маршруты" },
   { href: "/events", label: "События" },
 ];
@@ -14,6 +14,11 @@ const links = [
 export default function Navbar({ user }: { user: AuthUser }) {
   const router = useRouter();
   const pathname = usePathname();
+
+  const links = [
+    ...baseLinks,
+    ...(user.role === "SUPERUSER" ? [{ href: "/admin", label: "Админ" }] : []),
+  ];
 
   function logout() {
     clearAuth();
