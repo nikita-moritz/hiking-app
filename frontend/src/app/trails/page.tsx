@@ -221,10 +221,11 @@ export default function TrailsPage() {
             {trails.map((trail) => (
               <div
                 key={trail.id}
+                onClick={() => router.push(`/trails/${trail.id}`)}
                 className="rounded-xl border bg-card p-5 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
               >
                 <div className="flex items-start justify-between mb-2">
-                  <h3 className="text-lg font-semibold">{trail.name}</h3>
+                  <h3 className="text-lg font-semibold hover:text-primary transition-colors">{trail.name}</h3>
                   <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full shrink-0 ml-2 ${
                     difficultyColor[trail.difficulty] ?? "bg-gray-100 text-gray-800"
                   }`}>
