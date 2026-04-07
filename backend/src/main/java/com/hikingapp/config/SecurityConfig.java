@@ -49,7 +49,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/trails/**").authenticated()
+                        .requestMatchers("/api/trails/**").authenticated()
                         .requestMatchers("/api/events/**").authenticated()
                         .requestMatchers("/api/profile/**").authenticated()
                         .requestMatchers("/api/users/**").hasRole("SUPERUSER")
