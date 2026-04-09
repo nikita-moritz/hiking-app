@@ -132,6 +132,20 @@ export const en = {
     dateLocale: "en-US",
     loginError: "Invalid login or password",
   },
+  event: {
+    back: "Back",
+    organizer: "Organizer",
+    participants: "Participants",
+    spotsOf: "of",
+    description: "Description",
+    join: "Join",
+    leave: "Leave",
+    joined: "You're in",
+    loginToJoin: "Sign in to join",
+    notFound: "Event not found",
+    free: "Spots available",
+    full: "Full",
+  },
 };
 
 export type Translations = typeof en;

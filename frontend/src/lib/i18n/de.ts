@@ -134,4 +134,18 @@ export const de: Translations = {
     dateLocale: "de-DE",
     loginError: "Ungültiger Benutzername oder Passwort",
   },
+  event: {
+    back: "Zurück",
+    organizer: "Organisator",
+    participants: "Teilnehmer",
+    spotsOf: "von",
+    description: "Beschreibung",
+    join: "Teilnehmen",
+    leave: "Abmelden",
+    joined: "Du bist dabei",
+    loginToJoin: "Anmelden zum Teilnehmen",
+    notFound: "Veranstaltung nicht gefunden",
+    free: "Plätze frei",
+    full: "Ausgebucht",
+  },
 };

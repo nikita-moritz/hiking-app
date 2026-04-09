@@ -143,5 +143,19 @@ export const ru: Translations = {
     dateLocale: "ru-RU",
     loginError: "Неверный логин или пароль",
   },
+  event: {
+    back: "Назад",
+    organizer: "Организатор",
+    participants: "Участники",
+    spotsOf: "из",
+    description: "Описание",
+    join: "Записаться",
+    leave: "Отменить запись",
+    joined: "Вы записаны",
+    loginToJoin: "Войдите, чтобы записаться",
+    notFound: "Событие не найдено",
+    free: "Свободно",
+    full: "Мест нет",
+  },
 };
 

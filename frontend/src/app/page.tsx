@@ -4,11 +4,11 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { supabase } from "@/lib/supabase";
-import { getAuth, login, loginWithSupabase, saveAuth } from "@/lib/auth";
+import { getAuth, loginWithSupabase, saveAuth } from "@/lib/auth";
 import { apiFetch } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { X, Calendar, MapPin, Lock, Loader2, Eye, EyeOff } from "lucide-react";
+import { X, Calendar, MapPin, Lock } from "lucide-react";
+import AuthForm from "@/components/AuthForm";
 import { useT } from "@/lib/i18n";
 import Navbar from "@/components/Navbar";
 
@@ -26,15 +26,6 @@ interface PublicEvent {
   locationName: string | null;
 }
 
-const GOOGLE_SVG = (
-  <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24">
-    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-  </svg>
-);
-
 export default function LandingPage() {
   const router = useRouter();
   const { lang, t } = useT();
@@ -44,11 +35,6 @@ export default function LandingPage() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [loginPrompt, setLoginPrompt] = useState(false);
   const [loginModal, setLoginModal] = useState(false);
-  const [loginEmail, setLoginEmail] = useState("");
-  const [loginPassword, setLoginPassword] = useState("");
-  const [loginLoading, setLoginLoading] = useState(false);
-  const [loginError, setLoginError] = useState("");
-  const [showLoginPassword, setShowLoginPassword] = useState(false);
 
   useEffect(() => {
     setIsLoggedIn(!!getAuth());
@@ -88,29 +74,6 @@ export default function LandingPage() {
       setLoginPrompt(true);
     } else {
       router.push(`/events/${id}`);
-    }
-  }
-
-  async function signInWithGoogle() {
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
-    });
-  }
-
-  async function handleEmailLogin(e: React.FormEvent) {
-    e.preventDefault();
-    setLoginError("");
-    setLoginLoading(true);
-    try {
-      const auth = await login(loginEmail, loginPassword);
-      saveAuth(auth);
-      setLoginModal(false);
-      setIsLoggedIn(true);
-    } catch (err: any) {
-      setLoginError(err.message ?? t.events.loginError);
-    } finally {
-      setLoginLoading(false);
     }
   }
 
@@ -252,52 +215,8 @@ export default function LandingPage() {
           >
             <X className="h-4 w-4" />
           </button>
-
           <h3 className="font-semibold text-lg mb-5">{t.events.loginModalTitle}</h3>
-
-          <Button variant="outline" className="w-full gap-2 mb-4" onClick={signInWithGoogle}>
-            {GOOGLE_SVG}
-            {t.events.loginWithGoogle}
-          </Button>
-
-          <div className="relative mb-4">
-            <div className="absolute inset-0 flex items-center"><div className="w-full border-t" /></div>
-            <div className="relative flex justify-center"><span className="bg-card px-3 text-xs text-muted-foreground">{t.events.orDivider}</span></div>
-          </div>
-
-          <form onSubmit={handleEmailLogin} className="space-y-3">
-            <Input
-              type="text"
-              placeholder={t.events.emailPlaceholder}
-              value={loginEmail}
-              onChange={e => setLoginEmail(e.target.value)}
-              required
-              autoComplete="username"
-            />
-            <div className="relative">
-              <Input
-                type={showLoginPassword ? "text" : "password"}
-                placeholder={t.events.passwordPlaceholder}
-                value={loginPassword}
-                onChange={e => setLoginPassword(e.target.value)}
-                required
-                autoComplete="current-password"
-                className="pr-10"
-              />
-              <button
-                type="button"
-                onClick={() => setShowLoginPassword(v => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                tabIndex={-1}
-              >
-                {showLoginPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-            {loginError && <p className="text-sm text-destructive">{loginError}</p>}
-            <Button type="submit" className="w-full" disabled={loginLoading}>
-              {loginLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : t.events.loginBtn}
-            </Button>
-          </form>
+          <AuthForm onSuccess={() => { setLoginModal(false); setIsLoggedIn(true); }} />
         </div>
       </div>
     )}
