@@ -4,16 +4,13 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { supabase } from "@/lib/supabase";
-import { getAuth, login, loginWithSupabase, saveAuth, clearAuth } from "@/lib/auth";
+import { getAuth, login, loginWithSupabase, saveAuth } from "@/lib/auth";
 import { apiFetch } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Mountain, LogIn, LogOut, Sun, Moon, Monitor,
-  X, Calendar, MapPin, Map, List, Lock, Loader2, User, Eye, EyeOff,
-} from "lucide-react";
-import { useTheme } from "next-themes";
-import { useT, type Language } from "@/lib/i18n";
+import { X, Calendar, MapPin, Lock, Loader2, Eye, EyeOff } from "lucide-react";
+import { useT } from "@/lib/i18n";
+import Navbar from "@/components/Navbar";
 
 const MapView = dynamic(() => import("@/components/MapView"), { ssr: false });
 
@@ -40,9 +37,7 @@ const GOOGLE_SVG = (
 
 export default function LandingPage() {
   const router = useRouter();
-  const { theme, setTheme } = useTheme();
-  const { lang, setLang, t } = useT();
-  const [mounted, setMounted] = useState(false);
+  const { lang, t } = useT();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [tab, setTab] = useState<"map" | "list">("map");
   const [events, setEvents] = useState<PublicEvent[]>([]);
@@ -56,9 +51,17 @@ export default function LandingPage() {
   const [showLoginPassword, setShowLoginPassword] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
     setIsLoggedIn(!!getAuth());
     fetchPublicEvents();
+    const tabParam = new URLSearchParams(window.location.search).get("tab");
+    if (tabParam === "list" || tabParam === "map") setTab(tabParam);
+
+    const onTab = (e: Event) => {
+      const t = (e as CustomEvent).detail;
+      if (t === "map" || t === "list") setTab(t);
+    };
+    window.addEventListener("tab-change", onTab);
+    return () => window.removeEventListener("tab-change", onTab);
 
     supabase.auth.onAuthStateChange(async (event, session) => {
       if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED") && session?.access_token) {
@@ -111,13 +114,6 @@ export default function LandingPage() {
     }
   }
 
-  const themeIcon = !mounted
-    ? <Monitor className="h-4 w-4" />
-    : theme === "dark" ? <Sun className="h-4 w-4" />
-    : theme === "light" ? <Moon className="h-4 w-4" />
-    : <Monitor className="h-4 w-4" />;
-  const nextTheme = theme === "dark" ? "light" : theme === "light" ? "system" : "dark";
-
   function eventTitle(e: PublicEvent) {
     if (lang === "en") return e.titleEn || e.title;
     if (lang === "de") return e.titleDe || e.title;
@@ -134,78 +130,9 @@ export default function LandingPage() {
 
   return (
     <>
-    <div className={`h-screen bg-background flex flex-col overflow-hidden transition-all duration-300 ${isModalOpen ? "blur-xl brightness-50" : ""}`}>
+    <div className="h-screen bg-background flex flex-col overflow-hidden transition-all duration-300" style={isModalOpen ? { filter: "blur(2px)" } : undefined}>
 
-      {/* ── Header ── */}
-      <header className="border-b bg-card/80 backdrop-blur shrink-0 z-[500] relative">
-        <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2 font-bold text-lg">
-            <Mountain className="h-5 w-5 text-primary" />
-            HikingApp
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="flex rounded-md border overflow-hidden text-xs font-medium">
-              {(["ru", "en", "de"] as Language[]).map(l => (
-                <button
-                  key={l}
-                  onClick={() => setLang(l)}
-                  className={`px-2 py-1 transition-colors ${lang === l ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}
-                >
-                  {l.toUpperCase()}
-                </button>
-              ))}
-            </div>
-            <button
-              onClick={() => setTheme(nextTheme)}
-              className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-            >
-              {themeIcon}
-            </button>
-            {isLoggedIn ? (
-              <>
-                <Button variant="ghost" size="sm" onClick={() => router.push("/profile")} className="gap-1.5">
-                  <User className="h-4 w-4" />
-                  <span className="max-w-[120px] truncate">{getAuth()?.username}</span>
-                </Button>
-                <Button variant="ghost" size="icon" onClick={() => { clearAuth(); setIsLoggedIn(false); }} className="text-muted-foreground">
-                  <LogOut className="h-4 w-4" />
-                </Button>
-              </>
-            ) : (
-              <Button size="sm" onClick={() => { setLoginModal(true); setLoginError(""); }} className="gap-2">
-                <LogIn className="h-4 w-4" />
-                {t.events.loginBtn}
-              </Button>
-            )}
-          </div>
-        </div>
-      </header>
-
-      {/* ── Tabs ── */}
-      <div className="border-b bg-card shrink-0 z-[400] relative">
-        <div className="max-w-6xl mx-auto px-4 flex">
-          {([
-            { key: "map",  label: t.events.tabMap,  Icon: Map  },
-            { key: "list", label: t.events.tabList, Icon: List },
-          ] as const).map(({ key, label, Icon }) => (
-            <button
-              key={key}
-              onClick={() => setTab(key)}
-              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-                tab === key
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <Icon className="h-4 w-4" />
-              {label}
-            </button>
-          ))}
-          <span className="ml-auto self-center text-xs text-muted-foreground pr-1">
-            {t.events.eventCount(events.length)}
-          </span>
-        </div>
-      </div>
+      <Navbar />
 
       {/* ── Content ── */}
       <div className="flex-1 relative overflow-hidden">
@@ -305,9 +232,8 @@ export default function LandingPage() {
             {t.events.loginPrompt}
           </p>
 
-          <Button onClick={signInWithGoogle} className="w-full gap-2">
-            {GOOGLE_SVG}
-            {t.events.loginWithGoogle}
+          <Button onClick={() => { setLoginPrompt(false); setLoginModal(true); }} className="w-full">
+            {t.events.loginBtn}
           </Button>
         </div>
       </div>

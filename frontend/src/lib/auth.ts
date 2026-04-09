@@ -34,6 +34,7 @@ export async function register(
 
 export function saveAuth(user: AuthUser) {
   localStorage.setItem("auth", JSON.stringify(user));
+  window.dispatchEvent(new Event("auth-change"));
 }
 
 export function getAuth(): AuthUser | null {
@@ -44,6 +45,7 @@ export function getAuth(): AuthUser | null {
 
 export function clearAuth() {
   localStorage.removeItem("auth");
+  window.dispatchEvent(new Event("auth-change"));
 }
 
 // Exchange Supabase token for Spring Boot JWT

@@ -19,3 +19,4 @@
 | user6    | user6@hikingapp.com | User123!  |
 | user7    | user7@hikingapp.com | User123!  |
 | user8    | user8@hikingapp.com | User123!  |
+| user11    | user11@hikingapp.com | User123!  |

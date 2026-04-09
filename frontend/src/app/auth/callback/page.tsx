@@ -27,7 +27,7 @@ export default function AuthCallbackPage() {
         setStatus(t.auth.callbackCreating);
         const auth = await loginWithSupabase(accessToken);
         saveAuth(auth);
-        router.push("/events");
+        router.replace("/");
       } catch (err: any) {
         setError(err.message ?? t.auth.callbackError);
       }
