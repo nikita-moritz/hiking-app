@@ -32,7 +32,7 @@ deploy_backend() {
   ssh_run "systemctl restart hikingapp-backend"
 
   info "Waiting for backend to start..."
-  sleep 12
+  sleep 20
   STATUS=$(ssh_run "curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/api/events")
   [ "$STATUS" = "200" ] && success "Backend deployed (HTTP $STATUS)" || error "Backend not responding (HTTP $STATUS)"
 }
