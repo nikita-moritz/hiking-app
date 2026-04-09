@@ -130,8 +130,11 @@ export default function LandingPage() {
 
   const selectedEvent = events.find(e => e.id === selectedId);
 
+  const isModalOpen = loginModal || (loginPrompt && !!selectedEvent);
+
   return (
-    <div className="h-screen bg-background flex flex-col overflow-hidden">
+    <>
+    <div className={`h-screen bg-background flex flex-col overflow-hidden transition-all duration-300 ${isModalOpen ? "blur-xl brightness-50" : ""}`}>
 
       {/* ── Header ── */}
       <header className="border-b bg-card/80 backdrop-blur shrink-0 z-[500] relative">
@@ -264,111 +267,114 @@ export default function LandingPage() {
           </div>
         )}
 
-        {/* ── Login prompt (shared between tabs) ── */}
-        {loginPrompt && selectedEvent && (
-          <div
-            className="absolute inset-0 flex items-end sm:items-center justify-center z-[1000] bg-black/40"
-            onClick={e => { if (e.target === e.currentTarget) setLoginPrompt(false); }}
-          >
-            <div className="bg-card rounded-t-2xl sm:rounded-xl w-full sm:max-w-sm shadow-2xl p-6 relative">
-              <button
-                onClick={() => setLoginPrompt(false)}
-                className="absolute top-4 right-4 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-              >
-                <X className="h-4 w-4" />
-              </button>
-
-              <h3 className="font-semibold text-base pr-6 mb-3">{eventTitle(selectedEvent)}</h3>
-
-              <div className="flex flex-col gap-1.5 mb-4 text-sm text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 shrink-0" />
-                  {new Date(selectedEvent.eventDate).toLocaleDateString(t.events.dateLocale, {
-                    day: "numeric", month: "long", year: "numeric",
-                  })}
-                </div>
-                {selectedEvent.locationName && (
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 shrink-0" />
-                    {selectedEvent.locationName}
-                  </div>
-                )}
-              </div>
-
-              <p className="text-sm text-muted-foreground mb-4">
-                {t.events.loginPrompt}
-              </p>
-
-              <Button onClick={signInWithGoogle} className="w-full gap-2">
-                {GOOGLE_SVG}
-                {t.events.loginWithGoogle}
-              </Button>
-            </div>
-          </div>
-        )}
       </div>
-      {/* ── Login modal ── */}
-      {loginModal && (
-        <div
-          className="fixed inset-0 flex items-end sm:items-center justify-center z-[2000] bg-black/50"
-          onClick={e => { if (e.target === e.currentTarget) setLoginModal(false); }}
-        >
-          <div className="bg-card rounded-t-2xl sm:rounded-xl w-full sm:max-w-sm shadow-2xl p-6 relative">
-            <button
-              onClick={() => setLoginModal(false)}
-              className="absolute top-4 right-4 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-            >
-              <X className="h-4 w-4" />
-            </button>
-
-            <h3 className="font-semibold text-lg mb-5">{t.events.loginModalTitle}</h3>
-
-            <Button variant="outline" className="w-full gap-2 mb-4" onClick={signInWithGoogle}>
-              {GOOGLE_SVG}
-              {t.events.loginWithGoogle}
-            </Button>
-
-            <div className="relative mb-4">
-              <div className="absolute inset-0 flex items-center"><div className="w-full border-t" /></div>
-              <div className="relative flex justify-center"><span className="bg-card px-3 text-xs text-muted-foreground">{t.events.orDivider}</span></div>
-            </div>
-
-            <form onSubmit={handleEmailLogin} className="space-y-3">
-              <Input
-                type="text"
-                placeholder={t.events.emailPlaceholder}
-                value={loginEmail}
-                onChange={e => setLoginEmail(e.target.value)}
-                required
-                autoComplete="username"
-              />
-              <div className="relative">
-                <Input
-                  type={showLoginPassword ? "text" : "password"}
-                  placeholder={t.events.passwordPlaceholder}
-                  value={loginPassword}
-                  onChange={e => setLoginPassword(e.target.value)}
-                  required
-                  autoComplete="current-password"
-                  className="pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowLoginPassword(v => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  tabIndex={-1}
-                >
-                  {showLoginPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-              {loginError && <p className="text-sm text-destructive">{loginError}</p>}
-              <Button type="submit" className="w-full" disabled={loginLoading}>
-                {loginLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : t.events.loginBtn}
-              </Button>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
+
+    {/* ── Login prompt — fixed sibling so blur on parent doesn't affect it ── */}
+    {loginPrompt && selectedEvent && (
+      <div
+        className="fixed inset-0 flex items-end sm:items-center justify-center z-[1000] bg-black/40"
+        onClick={e => { if (e.target === e.currentTarget) setLoginPrompt(false); }}
+      >
+        <div className="bg-card rounded-t-2xl sm:rounded-xl w-full sm:max-w-sm shadow-2xl p-6 relative">
+          <button
+            onClick={() => setLoginPrompt(false)}
+            className="absolute top-4 right-4 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          >
+            <X className="h-4 w-4" />
+          </button>
+
+          <h3 className="font-semibold text-base pr-6 mb-3">{eventTitle(selectedEvent)}</h3>
+
+          <div className="flex flex-col gap-1.5 mb-4 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 shrink-0" />
+              {new Date(selectedEvent.eventDate).toLocaleDateString(t.events.dateLocale, {
+                day: "numeric", month: "long", year: "numeric",
+              })}
+            </div>
+            {selectedEvent.locationName && (
+              <div className="flex items-center gap-2">
+                <MapPin className="h-4 w-4 shrink-0" />
+                {selectedEvent.locationName}
+              </div>
+            )}
+          </div>
+
+          <p className="text-sm text-muted-foreground mb-4">
+            {t.events.loginPrompt}
+          </p>
+
+          <Button onClick={signInWithGoogle} className="w-full gap-2">
+            {GOOGLE_SVG}
+            {t.events.loginWithGoogle}
+          </Button>
+        </div>
+      </div>
+    )}
+
+    {/* ── Login modal ── */}
+    {loginModal && (
+      <div
+        className="fixed inset-0 flex items-end sm:items-center justify-center z-[2000] bg-black/50"
+        onClick={e => { if (e.target === e.currentTarget) setLoginModal(false); }}
+      >
+        <div className="bg-card rounded-t-2xl sm:rounded-xl w-full sm:max-w-sm shadow-2xl p-6 relative">
+          <button
+            onClick={() => setLoginModal(false)}
+            className="absolute top-4 right-4 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          >
+            <X className="h-4 w-4" />
+          </button>
+
+          <h3 className="font-semibold text-lg mb-5">{t.events.loginModalTitle}</h3>
+
+          <Button variant="outline" className="w-full gap-2 mb-4" onClick={signInWithGoogle}>
+            {GOOGLE_SVG}
+            {t.events.loginWithGoogle}
+          </Button>
+
+          <div className="relative mb-4">
+            <div className="absolute inset-0 flex items-center"><div className="w-full border-t" /></div>
+            <div className="relative flex justify-center"><span className="bg-card px-3 text-xs text-muted-foreground">{t.events.orDivider}</span></div>
+          </div>
+
+          <form onSubmit={handleEmailLogin} className="space-y-3">
+            <Input
+              type="text"
+              placeholder={t.events.emailPlaceholder}
+              value={loginEmail}
+              onChange={e => setLoginEmail(e.target.value)}
+              required
+              autoComplete="username"
+            />
+            <div className="relative">
+              <Input
+                type={showLoginPassword ? "text" : "password"}
+                placeholder={t.events.passwordPlaceholder}
+                value={loginPassword}
+                onChange={e => setLoginPassword(e.target.value)}
+                required
+                autoComplete="current-password"
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowLoginPassword(v => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                tabIndex={-1}
+              >
+                {showLoginPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+            {loginError && <p className="text-sm text-destructive">{loginError}</p>}
+            <Button type="submit" className="w-full" disabled={loginLoading}>
+              {loginLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : t.events.loginBtn}
+            </Button>
+          </form>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
