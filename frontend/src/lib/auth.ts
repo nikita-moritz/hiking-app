@@ -1,4 +1,4 @@
-const API = "http://localhost:8080/api";
+const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/api";
 
 export interface AuthUser {
   token: string;
@@ -44,4 +44,14 @@ export function getAuth(): AuthUser | null {
 
 export function clearAuth() {
   localStorage.removeItem("auth");
+}
+
+// Exchange Supabase token for Spring Boot JWT
+export async function loginWithSupabase(supabaseToken: string): Promise<AuthUser> {
+  const res = await fetch(`${API}/auth/supabase`, {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${supabaseToken}` },
+  });
+  if (!res.ok) throw new Error("Ошибка авторизации через Supabase");
+  return res.json();
 }

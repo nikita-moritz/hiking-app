@@ -7,31 +7,41 @@ import java.time.LocalDateTime;
 public record EventResponse(
         Long id,
         String title,
+        String titleEn,
+        String titleRu,
+        String titleDe,
         String description,
         Long trailId,
-        String trailName,
         Long organizerId,
-        String organizerUsername,
+        String organizerName,
         LocalDateTime eventDate,
-        int maxParticipants,
-        long confirmedCount,
-        boolean joined,
-        String status
+        Integer maxParticipants,
+        long participantCount,
+        String status,
+        Double latitude,
+        Double longitude,
+        String locationName,
+        LocalDateTime createdAt
 ) {
-    public static EventResponse from(Event e, long confirmedCount, boolean joined) {
+    public static EventResponse from(Event e, long participantCount) {
         return new EventResponse(
                 e.getId(),
                 e.getTitle(),
+                e.getTitleEn(),
+                e.getTitleRu(),
+                e.getTitleDe(),
                 e.getDescription(),
                 e.getTrail() != null ? e.getTrail().getId() : null,
-                e.getTrail() != null ? e.getTrail().getName() : null,
-                e.getOrganizer().getId(),
-                e.getOrganizer().getUsername(),
+                e.getOrganizer() != null ? e.getOrganizer().getId() : null,
+                e.getOrganizerName(),
                 e.getEventDate(),
                 e.getMaxParticipants(),
-                confirmedCount,
-                joined,
-                e.getStatus().name()
+                participantCount,
+                e.getStatus(),
+                e.getLatitude(),
+                e.getLongitude(),
+                e.getLocationName(),
+                e.getCreatedAt()
         );
     }
 }

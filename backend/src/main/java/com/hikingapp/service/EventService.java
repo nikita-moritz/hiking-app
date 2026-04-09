@@ -2,11 +2,13 @@ package com.hikingapp.service;
 
 import com.hikingapp.dto.EventRequest;
 import com.hikingapp.dto.EventResponse;
-import com.hikingapp.dto.ParticipantResponse;
-import com.hikingapp.entity.*;
-import com.hikingapp.repository.*;
+import com.hikingapp.entity.Event;
+import com.hikingapp.entity.EventParticipant;
+import com.hikingapp.entity.User;
+import com.hikingapp.repository.EventParticipantRepository;
+import com.hikingapp.repository.EventRepository;
+import com.hikingapp.repository.TrailRepository;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -17,153 +19,109 @@ public class EventService {
     private final EventRepository eventRepo;
     private final EventParticipantRepository participantRepo;
     private final TrailRepository trailRepo;
-    private final UserRepository userRepo;
 
     public EventService(EventRepository eventRepo,
                         EventParticipantRepository participantRepo,
-                        TrailRepository trailRepo,
-                        UserRepository userRepo) {
+                        TrailRepository trailRepo) {
         this.eventRepo = eventRepo;
         this.participantRepo = participantRepo;
         this.trailRepo = trailRepo;
-        this.userRepo = userRepo;
     }
 
-    public List<EventResponse> getAll(Long currentUserId) {
-        return eventRepo.findAll().stream()
-                .map(e -> toResponse(e, currentUserId))
+    public List<EventResponse> getUpcoming() {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime oneMonthLater = now.plusDays(30);
+        return eventRepo
+                .findByStatusAndEventDateBetweenOrderByEventDateAsc("upcoming", now, oneMonthLater)
+                .stream()
+                .map(e -> EventResponse.from(e, participantRepo.countByEventIdAndStatus(e.getId(), "confirmed")))
                 .toList();
     }
 
-    public List<EventResponse> getUpcoming(Long currentUserId) {
-        return eventRepo.findByStatusOrderByEventDateAsc(EventStatus.UPCOMING).stream()
-                .map(e -> toResponse(e, currentUserId))
-                .toList();
+    public EventResponse getById(Long id) {
+        Event e = eventRepo.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Event not found: " + id));
+        return EventResponse.from(e, participantRepo.countByEventIdAndStatus(id, "confirmed"));
     }
 
-    public EventResponse getById(Long id, Long currentUserId) {
-        Event event = findEvent(id);
-        return toResponse(event, currentUserId);
-    }
-
-    @Transactional
-    public EventResponse create(EventRequest req, Long organizerId) {
-        User organizer = userRepo.findById(organizerId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
-
-        Event event = new Event();
-        event.setTitle(req.title());
-        event.setDescription(req.description());
-        event.setEventDate(req.eventDate());
-        event.setMaxParticipants(req.maxParticipants());
-        event.setOrganizer(organizer);
-
+    public EventResponse create(EventRequest req, User organizer) {
+        Event e = new Event();
+        e.setTitle(req.titleEn() != null ? req.titleEn() : req.title());
+        e.setTitleEn(req.titleEn() != null ? req.titleEn() : req.title());
+        e.setTitleRu(req.titleRu());
+        e.setTitleDe(req.titleDe());
+        e.setDescription(req.description());
+        e.setEventDate(req.eventDate());
+        e.setMaxParticipants(req.maxParticipants() != null ? req.maxParticipants() : 10);
+        e.setLatitude(req.latitude());
+        e.setLongitude(req.longitude());
+        e.setLocationName(req.locationName());
+        e.setOrganizer(organizer);
+        e.setOrganizerName(organizer.getUsername());
         if (req.trailId() != null) {
-            trailRepo.findById(req.trailId()).ifPresent(event::setTrail);
+            trailRepo.findById(req.trailId()).ifPresent(e::setTrail);
         }
-
-        return toResponse(eventRepo.save(event), organizerId);
+        return EventResponse.from(eventRepo.save(e), 0);
     }
 
-    @Transactional
-    public EventResponse update(Long id, EventRequest req, Long requesterId) {
-        Event event = findEvent(id);
-        checkOrganizerOrSuperuser(event, requesterId);
+    public EventResponse update(Long id, EventRequest req, User requester) {
+        Event e = eventRepo.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Event not found: " + id));
+        checkOwnership(e, requester);
 
-        event.setTitle(req.title());
-        event.setDescription(req.description());
-        event.setEventDate(req.eventDate());
-        event.setMaxParticipants(req.maxParticipants());
-        event.setUpdatedAt(LocalDateTime.now());
-
+        e.setTitle(req.titleEn() != null ? req.titleEn() : req.title());
+        e.setTitleEn(req.titleEn() != null ? req.titleEn() : req.title());
+        e.setTitleRu(req.titleRu());
+        e.setTitleDe(req.titleDe());
+        e.setDescription(req.description());
+        e.setEventDate(req.eventDate());
+        if (req.maxParticipants() != null) e.setMaxParticipants(req.maxParticipants());
+        e.setLatitude(req.latitude());
+        e.setLongitude(req.longitude());
+        e.setLocationName(req.locationName());
+        e.setUpdatedAt(LocalDateTime.now());
         if (req.trailId() != null) {
-            trailRepo.findById(req.trailId()).ifPresent(event::setTrail);
+            trailRepo.findById(req.trailId()).ifPresent(e::setTrail);
         }
-
-        return toResponse(eventRepo.save(event), requesterId);
+        return EventResponse.from(eventRepo.save(e),
+                participantRepo.countByEventIdAndStatus(id, "confirmed"));
     }
 
-    @Transactional
-    public void cancel(Long id, Long requesterId) {
-        Event event = findEvent(id);
-        checkOrganizerOrSuperuser(event, requesterId);
-        event.setStatus(EventStatus.CANCELLED);
-        event.setUpdatedAt(LocalDateTime.now());
-        eventRepo.save(event);
+    public void delete(Long id, User requester) {
+        Event e = eventRepo.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Event not found: " + id));
+        checkOwnership(e, requester);
+        eventRepo.delete(e);
     }
 
-    @Transactional
-    public EventResponse join(Long eventId, Long userId) {
-        Event event = findEvent(eventId);
-
-        if (event.getStatus() != EventStatus.UPCOMING) {
-            throw new IllegalStateException("Нельзя записаться — событие не активно");
+    public void join(Long eventId, User user) {
+        Event e = eventRepo.findById(eventId)
+                .orElseThrow(() -> new IllegalArgumentException("Event not found: " + eventId));
+        if (participantRepo.existsByEventIdAndUserId(eventId, user.getId())) {
+            throw new IllegalStateException("Already joined");
         }
-
-        long confirmed = participantRepo.countByEventIdAndStatus(eventId, ParticipantStatus.CONFIRMED);
-        if (confirmed >= event.getMaxParticipants()) {
-            throw new IllegalStateException("Мест нет — событие заполнено");
+        long count = participantRepo.countByEventIdAndStatus(eventId, "confirmed");
+        if (count >= e.getMaxParticipants()) {
+            throw new IllegalStateException("Event is full");
         }
-
-        var existing = participantRepo.findByEventIdAndUserId(eventId, userId);
-        if (existing.isPresent()) {
-            EventParticipant p = existing.get();
-            if (p.getStatus() == ParticipantStatus.CONFIRMED) {
-                throw new IllegalStateException("Вы уже записаны на это событие");
-            }
-            p.setStatus(ParticipantStatus.CONFIRMED);
-            participantRepo.save(p);
-        } else {
-            User user = userRepo.findById(userId).orElseThrow();
-            participantRepo.save(new EventParticipant(event, user));
-        }
-
-        return toResponse(event, userId);
-    }
-
-    @Transactional
-    public EventResponse leave(Long eventId, Long userId) {
-        EventParticipant p = participantRepo.findByEventIdAndUserId(eventId, userId)
-                .orElseThrow(() -> new IllegalStateException("Вы не записаны на это событие"));
-        p.setStatus(ParticipantStatus.CANCELLED);
+        EventParticipant p = new EventParticipant();
+        p.setEvent(e);
+        p.setUser(user);
         participantRepo.save(p);
-        return toResponse(findEvent(eventId), userId);
     }
 
-    public List<ParticipantResponse> getParticipants(Long eventId) {
-        return participantRepo.findByEventId(eventId).stream()
-                .map(ParticipantResponse::from)
-                .toList();
+    public void leave(Long eventId, User user) {
+        EventParticipant p = participantRepo.findByEventIdAndUserId(eventId, user.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Not a participant"));
+        participantRepo.delete(p);
     }
 
-    public List<EventResponse> getMyEvents(Long userId) {
-        return participantRepo.findByUserId(userId).stream()
-                .filter(p -> p.getStatus() == ParticipantStatus.CONFIRMED)
-                .map(p -> toResponse(p.getEvent(), userId))
-                .toList();
-    }
-
-    // ── helpers ──────────────────────────────────────────────────────────────
-
-    private Event findEvent(Long id) {
-        return eventRepo.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Событие не найдено: " + id));
-    }
-
-    private void checkOrganizerOrSuperuser(Event event, Long requesterId) {
-        User requester = userRepo.findById(requesterId).orElseThrow();
-        if (!event.getOrganizer().getId().equals(requesterId)
-                && requester.getRole() != Role.SUPERUSER) {
-            throw new SecurityException("Нет прав на редактирование этого события");
+    private void checkOwnership(Event e, User requester) {
+        boolean isOrganizer = e.getOrganizer() != null &&
+                e.getOrganizer().getId().equals(requester.getId());
+        boolean isSuperuser = requester.getRole().name().equals("SUPERUSER");
+        if (!isOrganizer && !isSuperuser) {
+            throw new SecurityException("Not authorized");
         }
-    }
-
-    private EventResponse toResponse(Event e, Long currentUserId) {
-        long confirmed = participantRepo.countByEventIdAndStatus(e.getId(), ParticipantStatus.CONFIRMED);
-        boolean joined = currentUserId != null &&
-                participantRepo.findByEventIdAndUserId(e.getId(), currentUserId)
-                        .map(p -> p.getStatus() == ParticipantStatus.CONFIRMED)
-                        .orElse(false);
-        return EventResponse.from(e, confirmed, joined);
     }
 }

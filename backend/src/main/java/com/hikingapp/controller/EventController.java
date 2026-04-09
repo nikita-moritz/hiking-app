@@ -2,11 +2,9 @@ package com.hikingapp.controller;
 
 import com.hikingapp.dto.EventRequest;
 import com.hikingapp.dto.EventResponse;
-import com.hikingapp.dto.ParticipantResponse;
 import com.hikingapp.entity.User;
 import com.hikingapp.service.EventService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,63 +20,47 @@ public class EventController {
         this.eventService = eventService;
     }
 
-    // ── Public (authenticated) ────────────────────────────────────────────────
-
     @GetMapping
-    public List<EventResponse> getAll(@AuthenticationPrincipal User user) {
-        return eventService.getUpcoming(user.getId());
+    public List<EventResponse> getUpcoming() {
+        return eventService.getUpcoming();
     }
 
     @GetMapping("/{id}")
-    public EventResponse getById(@PathVariable Long id, @AuthenticationPrincipal User user) {
-        return eventService.getById(id, user.getId());
+    public EventResponse getById(@PathVariable Long id) {
+        return eventService.getById(id);
     }
-
-    @GetMapping("/my")
-    public List<EventResponse> getMyEvents(@AuthenticationPrincipal User user) {
-        return eventService.getMyEvents(user.getId());
-    }
-
-    // ── Admin / Superuser ─────────────────────────────────────────────────────
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN','SUPERUSER')")
-    public ResponseEntity<EventResponse> create(@RequestBody EventRequest req,
-                                                @AuthenticationPrincipal User user) {
-        return ResponseEntity.ok(eventService.create(req, user.getId()));
+    public EventResponse create(@RequestBody EventRequest req,
+                                @AuthenticationPrincipal User user) {
+        return eventService.create(req, user);
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','SUPERUSER')")
     public EventResponse update(@PathVariable Long id,
                                 @RequestBody EventRequest req,
                                 @AuthenticationPrincipal User user) {
-        return eventService.update(id, req, user.getId());
+        return eventService.update(id, req, user);
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','SUPERUSER')")
-    public ResponseEntity<Void> cancel(@PathVariable Long id,
+    public ResponseEntity<Void> delete(@PathVariable Long id,
                                        @AuthenticationPrincipal User user) {
-        eventService.cancel(id, user.getId());
+        eventService.delete(id, user);
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/{id}/participants")
-    @PreAuthorize("hasAnyRole('ADMIN','SUPERUSER')")
-    public List<ParticipantResponse> getParticipants(@PathVariable Long id) {
-        return eventService.getParticipants(id);
-    }
-
-    // ── User actions ──────────────────────────────────────────────────────────
-
     @PostMapping("/{id}/join")
-    public EventResponse join(@PathVariable Long id, @AuthenticationPrincipal User user) {
-        return eventService.join(id, user.getId());
+    public ResponseEntity<Void> join(@PathVariable Long id,
+                                     @AuthenticationPrincipal User user) {
+        eventService.join(id, user);
+        return ResponseEntity.ok().build();
     }
 
-    @DeleteMapping("/{id}/leave")
-    public EventResponse leave(@PathVariable Long id, @AuthenticationPrincipal User user) {
-        return eventService.leave(id, user.getId());
+    @DeleteMapping("/{id}/join")
+    public ResponseEntity<Void> leave(@PathVariable Long id,
+                                      @AuthenticationPrincipal User user) {
+        eventService.leave(id, user);
+        return ResponseEntity.noContent().build();
     }
 }

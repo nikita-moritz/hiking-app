@@ -29,6 +29,7 @@ public class UserService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String username) {
         return repo.findByUsername(username)
+                .or(() -> repo.findByEmail(username))
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
     }
 
@@ -51,6 +52,17 @@ public class UserService implements UserDetailsService {
         user.setPassword(encoder.encode(req.password()));
         user.setRole(role);
         return UserResponse.from(repo.save(user));
+    }
+
+    public User findOrCreateByEmail(String email, String name) {
+        return repo.findByEmail(email).orElseGet(() -> {
+            User user = new User();
+            user.setEmail(email);
+            user.setUsername(name);
+            user.setPassword(encoder.encode(java.util.UUID.randomUUID().toString()));
+            user.setRole(Role.USER);
+            return repo.save(user);
+        });
     }
 
     public List<UserResponse> getAll() {

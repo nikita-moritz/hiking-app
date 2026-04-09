@@ -20,24 +20,20 @@ public class EventParticipant {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Enumerated(EnumType.STRING)
-    private ParticipantStatus status = ParticipantStatus.CONFIRMED;
+    private String status = "confirmed";
 
     @Column(name = "joined_at")
     private LocalDateTime joinedAt = LocalDateTime.now();
 
-    public EventParticipant() {}
+    public Long getId()                 { return id; }
+    public Event getEvent()             { return event; }
+    public User getUser()               { return user; }
+    public String getStatus()           { return status; }
+    public LocalDateTime getJoinedAt()  { return joinedAt; }
 
-    public EventParticipant(Event event, User user) {
-        this.event = event;
-        this.user = user;
-    }
-
-    public Long getId()                   { return id; }
-    public Event getEvent()               { return event; }
-    public User getUser()                 { return user; }
-    public ParticipantStatus getStatus()  { return status; }
-    public LocalDateTime getJoinedAt()    { return joinedAt; }
-
-    public void setStatus(ParticipantStatus status) { this.status = status; }
+    public void setId(Long id)              { this.id = id; }
+    public void setEvent(Event event)       { this.event = event; }
+    public void setUser(User user)          { this.user = user; }
+    public void setStatus(String status)    { this.status = status; }
+    public void setJoinedAt(LocalDateTime t){ this.joinedAt = t; }
 }

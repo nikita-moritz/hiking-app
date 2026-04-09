@@ -1,17 +1,13 @@
 package com.hikingapp.controller;
 
 import com.hikingapp.dto.ChangePasswordRequest;
-import com.hikingapp.dto.EventResponse;
 import com.hikingapp.dto.UserResponse;
 import com.hikingapp.entity.User;
 import com.hikingapp.repository.UserRepository;
-import com.hikingapp.service.EventService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/profile")
@@ -19,14 +15,11 @@ public class ProfileController {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final EventService eventService;
 
     public ProfileController(UserRepository userRepository,
-                             PasswordEncoder passwordEncoder,
-                             EventService eventService) {
+                             PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
-        this.eventService = eventService;
     }
 
     @GetMapping
@@ -47,10 +40,5 @@ public class ProfileController {
         managed.setPassword(passwordEncoder.encode(req.newPassword()));
         userRepository.save(managed);
         return ResponseEntity.ok("Пароль изменён");
-    }
-
-    @GetMapping("/events")
-    public List<EventResponse> getMyEvents(@AuthenticationPrincipal User user) {
-        return eventService.getMyEvents(user.getId());
     }
 }

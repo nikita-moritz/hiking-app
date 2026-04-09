@@ -4,13 +4,14 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getAuth, type AuthUser } from "@/lib/auth";
 import { apiFetch } from "@/lib/api";
+import { useT } from "@/lib/i18n";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, MapPin, User, KeyRound, Loader2, CheckCircle } from "lucide-react";
+import { User, KeyRound, Loader2, CheckCircle } from "lucide-react";
 
 interface UserProfile {
   id: number;
@@ -21,19 +22,8 @@ interface UserProfile {
   createdAt: string;
 }
 
-interface EventItem {
-  id: number;
-  title: string;
-  trailName: string | null;
-  eventDate: string;
-  confirmedCount: number;
-  maxParticipants: number;
-  status: string;
-}
-
 const roleVariant: Record<string, "default" | "warning" | "success" | "outline"> = {
   SUPERUSER: "default",
-  ADMIN:     "warning",
   USER:      "outline",
 };
 
@@ -43,24 +33,16 @@ function fmtDate(iso: string) {
   });
 }
 
-function fmtDateTime(iso: string) {
-  return new Date(iso).toLocaleString("ru-RU", {
-    day: "numeric", month: "long", year: "numeric",
-    hour: "2-digit", minute: "2-digit",
-  });
-}
-
 export default function ProfilePage() {
   const router = useRouter();
-  const [user, setUser]         = useState<AuthUser | null>(null);
-  const [profile, setProfile]   = useState<UserProfile | null>(null);
-  const [events, setEvents]     = useState<EventItem[]>([]);
-  const [loading, setLoading]   = useState(true);
+  const { t } = useT();
+  const [user, setUser]       = useState<AuthUser | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // password form
-  const [pwForm, setPwForm]     = useState({ current: "", next: "", confirm: "" });
+  const [pwForm, setPwForm]       = useState({ current: "", next: "", confirm: "" });
   const [pwLoading, setPwLoading] = useState(false);
-  const [pwError, setPwError]   = useState("");
+  const [pwError, setPwError]     = useState("");
   const [pwSuccess, setPwSuccess] = useState(false);
 
   useEffect(() => {
@@ -68,11 +50,8 @@ export default function ProfilePage() {
     if (!auth) { router.push("/auth"); return; }
     setUser(auth);
 
-    Promise.all([
-      apiFetch<UserProfile>("/profile"),
-      apiFetch<EventItem[]>("/profile/events"),
-    ])
-      .then(([p, ev]) => { setProfile(p); setEvents(ev); })
+    apiFetch<UserProfile>("/profile")
+      .then(p => setProfile(p))
       .finally(() => setLoading(false));
   }, [router]);
 
@@ -81,14 +60,8 @@ export default function ProfilePage() {
     setPwError("");
     setPwSuccess(false);
 
-    if (pwForm.next !== pwForm.confirm) {
-      setPwError("Новые пароли не совпадают");
-      return;
-    }
-    if (pwForm.next.length < 6) {
-      setPwError("Пароль должен быть не менее 6 символов");
-      return;
-    }
+    if (pwForm.next !== pwForm.confirm) { setPwError(t.profile.pwMismatch); return; }
+    if (pwForm.next.length < 6)         { setPwError(t.profile.pwTooShort); return; }
 
     setPwLoading(true);
     try {
@@ -99,7 +72,7 @@ export default function ProfilePage() {
       setPwSuccess(true);
       setPwForm({ current: "", next: "", confirm: "" });
     } catch (err: unknown) {
-      setPwError(err instanceof Error ? err.message : "Ошибка");
+      setPwError(err instanceof Error ? err.message : t.common.error);
     } finally {
       setPwLoading(false);
     }
@@ -115,88 +88,82 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <Navbar user={user} />
+      <Navbar />
 
-      <main className="max-w-4xl mx-auto px-6 py-10 w-full flex-1">
-        <h1 className="text-2xl font-bold mb-8">Мой профиль</h1>
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-10 w-full flex-1">
+        <h1 className="text-2xl font-bold mb-8">{t.profile.title}</h1>
 
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid sm:grid-cols-2 gap-6">
 
-          {/* ── Profile info ─────────────────────────────────────────────── */}
+          {/* Profile info */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <User className="h-5 w-5 text-primary" />
-                Данные аккаунта
+                {t.profile.accountData}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between py-2 border-b">
-                <span className="text-sm text-muted-foreground">Имя пользователя</span>
+                <span className="text-sm text-muted-foreground">{t.profile.username}</span>
                 <span className="font-medium">{profile?.username}</span>
               </div>
               <div className="flex items-center justify-between py-2 border-b">
-                <span className="text-sm text-muted-foreground">Email</span>
-                <span className="font-medium">{profile?.email}</span>
+                <span className="text-sm text-muted-foreground">{t.profile.email}</span>
+                <span className="font-medium text-sm break-all text-right ml-2">{profile?.email}</span>
               </div>
               <div className="flex items-center justify-between py-2 border-b">
-                <span className="text-sm text-muted-foreground">Роль</span>
+                <span className="text-sm text-muted-foreground">{t.profile.role}</span>
                 <Badge variant={roleVariant[profile?.role ?? "USER"] ?? "outline"}>
                   {profile?.role}
                 </Badge>
               </div>
               <div className="flex items-center justify-between py-2 border-b">
-                <span className="text-sm text-muted-foreground">Статус</span>
+                <span className="text-sm text-muted-foreground">{t.profile.status}</span>
                 <Badge variant={profile?.active ? "success" : "destructive"}>
-                  {profile?.active ? "Активен" : "Заблокирован"}
+                  {profile?.active ? t.profile.active : t.profile.blocked}
                 </Badge>
               </div>
               <div className="flex items-center justify-between py-2">
-                <span className="text-sm text-muted-foreground">Дата регистрации</span>
+                <span className="text-sm text-muted-foreground">{t.profile.registeredAt}</span>
                 <span className="text-sm">{profile ? fmtDate(profile.createdAt) : "—"}</span>
               </div>
             </CardContent>
           </Card>
 
-          {/* ── Change password ───────────────────────────────────────────── */}
+          {/* Change password */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <KeyRound className="h-5 w-5 text-primary" />
-                Сменить пароль
+                {t.profile.changePassword}
               </CardTitle>
-              <CardDescription>Минимум 6 символов</CardDescription>
+              <CardDescription>{t.profile.minLength}</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleChangePassword} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="current">Текущий пароль</Label>
+                  <Label htmlFor="current">{t.profile.currentPw}</Label>
                   <Input
-                    id="current"
-                    type="password"
-                    placeholder="••••••••"
+                    id="current" type="password" placeholder="••••••••"
                     value={pwForm.current}
                     onChange={(e) => setPwForm({ ...pwForm, current: e.target.value })}
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="next">Новый пароль</Label>
+                  <Label htmlFor="next">{t.profile.newPw}</Label>
                   <Input
-                    id="next"
-                    type="password"
-                    placeholder="••••••••"
+                    id="next" type="password" placeholder="••••••••"
                     value={pwForm.next}
                     onChange={(e) => setPwForm({ ...pwForm, next: e.target.value })}
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="confirm">Повторите новый пароль</Label>
+                  <Label htmlFor="confirm">{t.profile.confirmPw}</Label>
                   <Input
-                    id="confirm"
-                    type="password"
-                    placeholder="••••••••"
+                    id="confirm" type="password" placeholder="••••••••"
                     value={pwForm.confirm}
                     onChange={(e) => setPwForm({ ...pwForm, confirm: e.target.value })}
                     required
@@ -207,61 +174,17 @@ export default function ProfilePage() {
                 {pwSuccess && (
                   <div className="flex items-center gap-2 text-sm text-primary">
                     <CheckCircle className="h-4 w-4" />
-                    Пароль успешно изменён
+                    {t.profile.pwSuccess}
                   </div>
                 )}
 
                 <Button type="submit" className="w-full" disabled={pwLoading}>
                   {pwLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                  {pwLoading ? "Сохранение..." : "Изменить пароль"}
+                  {pwLoading ? t.profile.saving : t.profile.savePw}
                 </Button>
               </form>
             </CardContent>
           </Card>
-        </div>
-
-        {/* ── My events ──────────────────────────────────────────────────── */}
-        <div className="mt-8">
-          <h2 className="text-lg font-semibold mb-4">Мои события</h2>
-
-          {events.length === 0 ? (
-            <div className="rounded-xl border bg-card p-10 text-center text-muted-foreground">
-              <Calendar className="h-10 w-10 mx-auto mb-3 opacity-30" />
-              <p>Вы ещё не записались ни на одно событие</p>
-              <Button variant="outline" className="mt-4" onClick={() => router.push("/events")}>
-                Посмотреть события
-              </Button>
-            </div>
-          ) : (
-            <div className="grid gap-3 md:grid-cols-2">
-              {events.map((ev) => (
-                <div
-                  key={ev.id}
-                  onClick={() => router.push(`/events/${ev.id}`)}
-                  className="rounded-xl border bg-card p-4 cursor-pointer hover:shadow-md transition-shadow"
-                >
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <h3 className="font-medium">{ev.title}</h3>
-                    <Badge variant={ev.status === "UPCOMING" ? "success" : "outline"} className="shrink-0">
-                      {ev.status === "UPCOMING" ? "Скоро" : ev.status}
-                    </Badge>
-                  </div>
-                  <div className="space-y-1 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-3.5 w-3.5 shrink-0" />
-                      <span className="capitalize">{fmtDateTime(ev.eventDate)}</span>
-                    </div>
-                    {ev.trailName && (
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-3.5 w-3.5 shrink-0" />
-                        <span>{ev.trailName}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       </main>
     </div>

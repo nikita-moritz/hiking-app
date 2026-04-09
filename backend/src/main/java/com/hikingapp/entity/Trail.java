@@ -12,7 +12,9 @@ public class Trail {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false)
     private String name;
+
     private String location;
 
     @Column(name = "distance_km")
@@ -20,20 +22,27 @@ public class Trail {
 
     private String difficulty;
 
+    private Double latitude;
+    private Double longitude;
+
     @Column(name = "created_at")
-    private LocalDateTime createdAt;
+    private LocalDateTime createdAt = LocalDateTime.now();
 
-    public Long getId() { return id; }
-    public String getName() { return name; }
-    public String getLocation() { return location; }
-    public BigDecimal getDistanceKm() { return distanceKm; }
-    public String getDifficulty() { return difficulty; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
+    public Long getId()                  { return id; }
+    public String getName()              { return name; }
+    public String getLocation()          { return location; }
+    public BigDecimal getDistanceKm()    { return distanceKm; }
+    public String getDifficulty()        { return difficulty; }
+    public Double getLatitude()          { return latitude; }
+    public Double getLongitude()         { return longitude; }
+    public LocalDateTime getCreatedAt()  { return createdAt; }
 
-    public void setId(Long id) { this.id = id; }
-    public void setName(String name) { this.name = name; }
-    public void setLocation(String location) { this.location = location; }
-    public void setDistanceKm(BigDecimal distanceKm) { this.distanceKm = distanceKm; }
-    public void setDifficulty(String difficulty) { this.difficulty = difficulty; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public void setId(Long id)                      { this.id = id; }
+    public void setName(String name)                { this.name = name; }
+    public void setLocation(String location)        { this.location = location; }
+    public void setDistanceKm(BigDecimal d)         { this.distanceKm = d; }
+    public void setDifficulty(String difficulty)    { this.difficulty = difficulty; }
+    public void setLatitude(Double latitude)        { this.latitude = latitude; }
+    public void setLongitude(Double longitude)      { this.longitude = longitude; }
+    public void setCreatedAt(LocalDateTime t)       { this.createdAt = t; }
 }
